@@ -1,0 +1,87 @@
+# Vérification automatique de ce que le Makefile lance déjà à la main.
+#
+# Le dispositif de tests existe (115 tests sur les cinq projets) mais rien ne
+# l'exécutait : cette CI comble ce seul écart, elle n'ajoute aucun outil.
+#
+# Deux principes :
+#   - `uv run` résout les dépendances depuis l'en-tête PEP 723 de chaque
+#     fichier de test, comme en local. Rien à installer, rien à synchroniser.
+#   - La matrice teste chaque projet séparément : un échec sur le 03 n'empêche
+#     pas de voir que le 05 passe.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  lint:
+    name: ruff (check + format)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Installer uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: ruff check
+        run: uv run --with ruff ruff check .
+
+      # Séparé de `ruff check` pour distinguer une faute de style d'un
+      # formatage non appliqué : les deux ne se corrigent pas de la même façon
+      # (`make fix` pour l'un, `make format` pour l'autre).
+      - name: ruff format --check
+        run: uv run --with ruff ruff format --check .
+
+  test:
+    name: ${{ matrix.certif }} / ${{ matrix.projet }}
+    runs-on: ubuntu-latest
+    strategy:
+      # Un projet en échec n'interrompt pas les autres : on veut l'état complet
+      # des deux certifications à chaque exécution, pas le premier échec.
+      fail-fast: false
+      matrix:
+        # `include` plutôt que le produit cartésien de deux listes : les projets
+        # ne portent pas les mêmes noms d'une certification à l'autre, un
+        # croisement automatique produirait dix combinaisons inexistantes.
+        include:
+          - certif: machine-learning-with-python
+            projet: 01-rock-paper-scissors
+          - certif: machine-learning-with-python
+            projet: 02-cat-dog-classifier
+          - certif: machine-learning-with-python
+            projet: 03-book-recommendation-knn
+          - certif: machine-learning-with-python
+            projet: 04-health-costs-regression
+          - certif: machine-learning-with-python
+            projet: 05-sms-text-classifier
+          - certif: data-analysis-with-python
+            projet: 01-mean-variance-standard-deviation-calculator
+          - certif: data-analysis-with-python
+            projet: 02-demographic-data-analyzer
+          - certif: data-analysis-with-python
+            projet: 03-medical-data-visualizer
+          - certif: data-analysis-with-python
+            projet: 04-page-view-time-series-visualizer
+          - certif: data-analysis-with-python
+            projet: 05-sea-level-predictor
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Installer uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      # Les jeux de données sont gitignorés : chaque projet les retélécharge
+      # depuis le CDN freeCodeCamp au premier appel de load_data(). Le projet 02
+      # du cursus ML (images) fait exception et sera ignoré si les données sont
+      # absentes.
+      - name: Lancer la suite
+        run: make test CERTIF=${{ matrix.certif }} PROJET=${{ matrix.projet }}
+        timeout-minutes: 20

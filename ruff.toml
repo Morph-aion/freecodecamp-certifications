@@ -1,0 +1,91 @@
+# Configuration ruff commune à toutes les certifications freeCodeCamp.
+#
+# Un seul fichier à la racine plutôt qu'un par projet : ruff remonte
+# l'arborescence jusqu'à trouver une configuration, donc celle-ci couvre les
+# cinq projets du cursus machine learning comme les certifications à venir.
+# Cinq copies à synchroniser n'apporteraient rien, les contraintes étant les
+# mêmes partout (notebooks Marimo, fichiers imposés par freeCodeCamp).
+#
+# Lancement, sans rien installer dans les projets :
+#     uv run --with ruff ruff check .
+#     uv run --with ruff ruff format --check .
+
+# Aligné sur l'en-tête PEP 723 des notebooks (`requires-python = ">=3.11"`) et
+# sur ce que déclarent les projets 01 et 02.
+#
+# Ce réglage n'est pas cosmétique : sans lui, le formateur réécrit
+# `f"{ratings['user']}"` en `f"{ratings["user"]}"`, syntaxe que seule la
+# PEP 701 autorise, à partir de 3.12. Le notebook cesse alors de parser sous la
+# version qu'il déclare, et `uv` peut résoudre un interpréteur où l'import
+# échoue. Le cas s'est produit ; `TestCoherenceDuNotebook` le verrouille côté
+# tests, `target-version` le supprime côté outillage.
+#
+# Nuance vérifiée depuis : la protection ne vaut que pour les f-strings
+# délimitées par des guillemets simples. Dans une chaîne triple `f"""…"""`,
+# ruff normalise malgré tout en `d["user"]` — ce qui est ici sans danger, les
+# délimiteurs étant différents : la forme produite parse en 3.11. C'est le cas
+# de la plupart des cellules Marimo, dont le contenu est du Markdown en chaîne
+# triple.
+target-version = "py311"
+
+line-length = 88
+
+# Fichiers fournis par freeCodeCamp, exclus du lint comme du formatage : ce sont
+# des livrables ou des harnais de correction, pas du code dont on choisit le
+# style. Les reformater les ferait diverger de l'upstream sans rien apporter.
+#
+#   RPS_game.py    porte « DO NOT MODIFY THIS FILE » ; le README du projet 01
+#                  précise qu'il est vérifié identique à l'upstream
+#   test_module.py les tests officiels du projet 01 (seuil de 60 % par bot)
+#   main.py        le bac à sable de développement fourni avec l'énoncé
+extend-exclude = [
+    "**/RPS_game.py",
+    "**/test_module.py",
+    "**/main.py",
+]
+
+[lint]
+# Au-delà du défaut (E4, E7, E9, F), mais sans excès :
+#   E, W  erreurs et avertissements pycodestyle
+#   F     pyflakes : imports inutilisés, variables mortes, noms non définis
+#   I     tri des imports
+#   UP    pyupgrade : tournures obsolètes pour la version cible
+#   B     flake8-bugbear : pièges réels (mutable par défaut, boucle et closure...)
+#
+# Volontairement absent : `D` (docstrings). Les docstrings de ces projets sont
+# longues, en français et pédagogiques ; les conventions anglo-saxonnes de
+# pydocstyle produiraient un bruit de faux positifs sans rien améliorer.
+select = ["E", "W", "F", "I", "UP", "B"]
+
+# `ruff format` coupe déjà le code à 88 colonnes ; ce qui dépasse encore après
+# formatage, ce sont des commentaires et docstrings en français que l'outil ne
+# peut pas réécrire, et qui excèdent la limite de quelques caractères. Les
+# découper à la main dégraderait la lecture pour satisfaire une règle que le
+# formateur applique déjà là où elle a du sens.
+ignore = ["E501"]
+
+[lint.per-file-ignores]
+# Les cellules de test officielles sont recopiées telles quelles depuis
+# l'énoncé : variables inutilisées et noms non idiomatiques compris. Elles
+# constituent le livrable soumis au correcteur, on ne les réécrit pas.
+"**/notebook.py" = [
+    "F841", # variable assignée jamais lue (`test_books_ratings`)
+    "E501", # ligne longue : titres de livres en dur dans les assertions
+    # B018 « expression sans effet » : dans un notebook Marimo, la dernière
+    # expression d'une cellule EST sa valeur affichée. Un `fig` seul en fin de
+    # cellule dessine la figure ; le retirer, comme le suggère la règle,
+    # supprimerait le graphique.
+    "B018",
+]
+
+# `RPS.py` porte la signature imposée par freeCodeCamp,
+# `player(prev_play, opponent_history=[])`. La liste mutable en argument par
+# défaut est le piège que B006 signale à juste titre en général, mais ici elle
+# vient de l'énoncé et le code ne s'en sert pas : l'état passe par des listes de
+# module. La changer ferait diverger le livrable de ce que le correcteur appelle.
+"**/RPS.py" = ["B006"]
+
+# Note : `main.py` et `test_module.py` ne figurent pas ici, ils sont écartés en
+# amont par `extend-exclude`. Leurs imports « inutilisés » (`human`,
+# `random_player`, `main`) alimentent les lignes que l'énoncé invite à
+# décommenter ; les retirer casserait ces instructions.

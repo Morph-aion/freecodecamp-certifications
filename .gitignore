@@ -1,0 +1,31 @@
+# Environnements
+.venv/
+__pycache__/
+*.pyc
+
+# Données brutes : jamais versionnées, toujours reproductibles depuis leur URL,
+# qui doit être documentée dans le code du projet concerné.
+# (Cat/Dog : 73 Mo, retéléchargés automatiquement par classifier.py)
+**/data/raw/
+*.zip
+
+# Artefacts entraînés volumineux (garder si petit, gitignore si lourd, à ajuster par projet)
+*.h5
+*.keras
+
+# Les figures de `figures/` sont volontairement versionnées : régénérables, mais
+# c'est le support pédagogique du projet, consultable sans relancer un entraînement.
+
+# Exports de notebooks : régénérables via `marimo export html notebook.py`
+*.html
+
+# Cache de session Marimo : réécrit à chaque ouverture du notebook (sorties de
+# cellules, positions), donc du churn permanent pour zéro information utile.
+__marimo__/
+
+# Cache ruff : régénéré à chaque exécution.
+.ruff_cache/
+
+# Cache pytest : créé dès qu'une suite est lancée avec pytest plutôt qu'avec
+# `uv run test_units.py`, régénéré à chaque exécution.
+.pytest_cache/
