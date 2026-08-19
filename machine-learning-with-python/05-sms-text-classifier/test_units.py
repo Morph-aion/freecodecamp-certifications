@@ -38,6 +38,14 @@ DATA_DIR = pathlib.Path(__file__).resolve().parent / "data" / "raw"
 class TestDonnees(unittest.TestCase):
     """Vérifie la structure des fichiers TSV."""
 
+    @classmethod
+    def setUpClass(cls):
+        # Déclenche le téléchargement si les TSV sont absents : sur un clone
+        # frais (CI comprise), `data/raw/` est vide puisqu'il est gitignoré, et
+        # les tests de structure lisent les fichiers en direct sans passer par
+        # `load_data()`.
+        load_data()
+
     def setUp(self):
         self.train_path = DATA_DIR / "train-data.tsv"
         self.valid_path = DATA_DIR / "valid-data.tsv"

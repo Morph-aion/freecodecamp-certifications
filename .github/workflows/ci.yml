@@ -30,13 +30,13 @@ jobs:
           enable-cache: true
 
       - name: ruff check
-        run: uv run --with ruff ruff check .
+        run: uv run --with ruff==0.15.18 ruff check .
 
       # Séparé de `ruff check` pour distinguer une faute de style d'un
       # formatage non appliqué : les deux ne se corrigent pas de la même façon
       # (`make fix` pour l'un, `make format` pour l'autre).
       - name: ruff format --check
-        run: uv run --with ruff ruff format --check .
+        run: uv run --with ruff==0.15.18 ruff format --check .
 
   test:
     name: ${{ matrix.certif }} / ${{ matrix.projet }}

@@ -10,7 +10,11 @@
 #     make test     lance la suite d'un projet (PROJET=...)
 #     make check    lint + format --check + test : ce qu'on lance avant de pousser
 
-RUFF := uv run --with ruff ruff
+# Version épinglée : ruff 0.16 s'est mis à formater les blocs de code dans les
+# fichiers Markdown, ce que 0.15 ignorait. Sans épinglage, la CI installe la
+# dernière version et échoue sur des fichiers que le poste local trouve
+# conformes. Relever ce numéro est un choix délibéré, pas un effet de bord.
+RUFF := uv run --with ruff==0.15.18 ruff
 # `uv run test_units.py` et non `python -m unittest` : seule cette forme lit
 # l'en-tête PEP 723 du fichier de test et résout ses dépendances (certains
 # projets ont besoin de tensorflow ou matplotlib, pas seulement de pandas).
